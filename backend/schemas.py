@@ -34,6 +34,12 @@ class PostCreate(BaseModel):
     image_url: str
     keywords: List[str]
 
+class PostUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    keywords: Optional[List[str]] = None
+
 class PostResponse(PostCreate):
     id: int
     created_at: Optional[datetime] = None
@@ -45,6 +51,10 @@ class PostResponse(PostCreate):
 # Boards
 class BoardCreate(BaseModel):
     name: str
+    description: Optional[str] = None
+
+class BoardUpdate(BaseModel):
+    name: Optional[str] = None
     description: Optional[str] = None
 
 class BoardResponse(BoardCreate):
