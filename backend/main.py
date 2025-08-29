@@ -1,7 +1,12 @@
 from fastapi import FastAPI, WebSocket
 from routes import UserRoutes, PostRoutes, BoardPostRoutes, BoardRoutes, FollowRoutes, LikeRoutes, TrendingRoutes
 from fastapi.middleware.cors import CORSMiddleware
+
 from controllers.websocket_manager import manager
+from db import Base, engine
+import models
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

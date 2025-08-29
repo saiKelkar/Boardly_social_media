@@ -2,7 +2,6 @@ from sqlalchemy import create_engine
 from dotenv import load_dotenv
 import os
 import redis
-import models
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -31,5 +30,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-Base.metadata.create_all(bind=engine)
