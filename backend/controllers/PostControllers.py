@@ -17,8 +17,8 @@ def get_pin_by_id(id: int, db: Session):
         )
     return pin
 
-async def create_pin(pin: schemas.PostCreate, db: Session):
-    new_pin = Posts(**pin.model_dump())
+async def create_pin(pin: schemas.PostCreate, db: Session, user_id: int):
+    new_pin = Posts(**pin.model_dump(), user_id = user_id)
     db.add(new_pin)
     db.commit()
     db.refresh(new_pin)

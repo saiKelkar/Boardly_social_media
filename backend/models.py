@@ -25,8 +25,16 @@ class Users(Base):
     posts = relationship("Posts", back_populates="user", cascade="all, delete-orphan")
     boards = relationship("Boards", back_populates="user")
     likes = relationship("Likes", back_populates="user")
-    follower = relationship("Follows", back_populates="user_following", foreign_keys="Follows.following_id")
-    following = relationship("Follows", back_populates="user_follower", foreign_keys="Follows.follower_id")
+    follower = relationship(
+        "Follows", 
+        back_populates="user_following", 
+        foreign_keys="Follows.following_id"
+    )
+    following = relationship(
+        "Follows", 
+        back_populates="user_follower", 
+        foreign_keys="Follows.follower_id"
+    )
 
 class Posts(Base):
     __tablename__ = "posts"
@@ -101,9 +109,17 @@ class Follows(Base):
 
     # Relationships
     follower_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    user_follower = relationship("Users", back_populates="follower")
+    user_follower = relationship(
+        "Users", 
+        back_populates="follower",
+        foreign_keys=[follower_id]
+    )
     following_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    user_following = relationship("Users", back_populates="following")
+    user_following = relationship(
+        "Users", 
+        back_populates="following",
+        foreign_keys=[following_id]
+    )
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
 

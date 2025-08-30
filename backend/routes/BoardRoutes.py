@@ -15,12 +15,12 @@ def get_board_by_id(id: int, db: Session=Depends(db.get_db)):
     return BoardControllers.get_board_by_id(id, db)
 
 @router.post("/", response_model=schemas.BoardResponse)
-async def create_board(pin: schemas.BoardCreate, db: Session=Depends(db.get_db)):
-    return await BoardControllers.create_board(pin, db)
+async def create_board(board: schemas.BoardCreate, db: Session=Depends(db.get_db)):
+    return await BoardControllers.create_board(board, db)
 
 @router.put("/{id}", response_model=schemas.BoardResponse)
-async def update_board(id: int, pin: schemas.BoardUpdate, db: Session=Depends(db.get_db)):
-    return await BoardControllers.update_board(id, pin, db)
+async def update_board(id: int, board: schemas.BoardUpdate, db: Session=Depends(db.get_db)):
+    return await BoardControllers.update_board(id, board, db)
 
 @router.delete("/{id}")
 def delete_board(id: int, db: Session=Depends(db.get_db)):

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import db, models
 import schemas
 from controllers import UserControllers
-from utils.User_dependencies import get_current_user
+from utils.Users_dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
