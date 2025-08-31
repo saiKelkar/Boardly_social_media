@@ -2,20 +2,42 @@ import axios from "axios";
 
 const API = axios.create({
     baseURL: "http://127.0.0.1:8000",
+    withCredentials: true,
+});
+
+API.interceptors.request.use((req) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    req.headers.Authorization = `Bearer ${token}`;
+  }
+  return req;
 });
 
 // Users
 export const getDashboard = () => 
     API.get("/auth/home");
 
-export const signUp = (user) => 
-    API.post("/auth/signup", user);
+export const signUp = async(user) => {
+  const res = await API.post("/auth/signup", user);
+  if (res.data?.access_token) {
+    localStorage.setItem("token", res.data.access_token);
+  }
+  return res;
+};
 
-export const logIn = (user) => 
-    API.post("/auth/login", user);
+export const logIn = async(user) => {
+  const res = await API.post("/auth/login", user);
+  console.log("Login response:", res.data);
+  if (res.data?.access_token) {
+    localStorage.setItem("token", res.data.access_token);
+  }
+  return res;
+};
 
-export const logOut = () => 
-    API.post("/auth/logout");
+export const logOut = () => {
+  localStorage.removeItem("token");
+  return API.post("/auth/logout");
+};
 
 // Posts
 export const getPins = () => 
