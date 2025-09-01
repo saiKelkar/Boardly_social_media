@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./LandingPage";
 import Dashboard from "./Dashboard";
+import CreatePin from "./CreatePin";  
+import Boards from "./Boards";        
 
 export default function App() {
   return (
@@ -9,8 +11,14 @@ export default function App() {
         {/* Default route → LandingPage */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* After login, redirect here */}
+        {/* Dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* Create Pin */}
+        <Route path="/create-pin" element={<CreatePin />} />
+
+        {/* Boards */}
+        <Route path="/boards" element={<Boards />} />
       </Routes>
     </Router>
   );

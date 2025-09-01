@@ -46,11 +46,27 @@ export const getPins = () =>
 export const getPinByID = (id) =>
     API.get(`/pin/${id}`);
 
-export const createPin = (pin) =>
-    API.post("/pin/", pin);
+export const createPin = async(formData) => {
+  return await API.post("/pin/", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
 
-export const updatePin = (id, pin) => 
-    API.put(`/pin/${id}`, pin);
+export const updatePin = (id, pin) => {
+  const formData = new FormData();
+  if (pin.title) formData.append("title", pin.title);
+  if (pin.description) formData.append("description", pin.description);
+  if (pin.keywords) formData.append("keywords", JSON.stringify(pin.keywords));
+  if (pin.image) formData.append("file", pin.image);
+
+  return API.put(`/pin/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
 
 export const deletePin = (id) =>
     API.delete(`/pin/${id}`)

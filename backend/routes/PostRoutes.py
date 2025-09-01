@@ -1,11 +1,19 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
+from pathlib import Path
+import shutil
 
-import db, schemas, models
+import db, schemas
+from models import Posts, Users
 from controllers import PostControllers
 from utils.Users_dependencies import get_current_user
 
 router = APIRouter(prefix="/pin", tags=["Pin"])
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
 
 @router.get("/", response_model=list[schemas.PostResponse])
 def get_pins(db: Session=Depends(db.get_db)):
@@ -16,8 +24,39 @@ def get_pin_by_id(id: int, db: Session=Depends(db.get_db)):
     return PostControllers.get_pin_by_id(id, db)
 
 @router.post("/", response_model=schemas.PostResponse)
-async def create_pin(pin: schemas.PostCreate, db: Session=Depends(db.get_db), current_user: models.Users=Depends(get_current_user)):
-    return await PostControllers.create_pin(pin, db, user_id=current_user.id)
+async def create_pin(
+    title: str = Form(...),
+    description: str = Form(...),
+    keywords: str = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(db.get_db),
+    current_user: Users=Depends(get_current_user)
+):
+    try:
+        # save file
+        file_path = UPLOAD_DIR / file.filename
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        image_url = f"http://127.0.0.1:8000/uploads/{file.filename}"
+        keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+
+        # create db object
+        pin = Posts(
+            title=title,
+            description=description,
+            keywords=keyword_list,
+            image_url=image_url,
+            user_id=current_user.id
+        )
+
+        db.add(pin)
+        db.commit()
+        db.refresh(pin)
+
+        return pin
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Pin creation failed: {str(e)}")
 
 @router.put("/{id}", response_model=schemas.PostResponse)
 async def update_pin(id: int, pin: schemas.PostUpdate, db: Session=Depends(db.get_db)):

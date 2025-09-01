@@ -5,8 +5,8 @@ from controllers.websocket_manager import manager
 from models import Boards
 import schemas
 
-def get_boards(db: Session):
-    return db.query(Boards).all()
+def get_boards(db: Session, current_user):
+    return db.query(Boards).filter(Boards.user_id == current_user.id).all()
 
 def get_board_by_id(id: int, db: Session):
     board = db.query(Boards).filter(Boards.id == id).first()
@@ -17,8 +17,12 @@ def get_board_by_id(id: int, db: Session):
         )
     return board
 
-async def create_board(board: schemas.BoardCreate, db: Session):
-    new_board = Boards(**board.model_dump())
+async def create_board(board: schemas.BoardCreate, db: Session, current_user):
+    new_board = Boards(
+        name=board.name,
+        description=board.description,
+        user_id=current_user.id
+    )
     db.add(new_board)
     db.commit()
     db.refresh(new_board)
