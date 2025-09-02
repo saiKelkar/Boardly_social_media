@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { getDashboard } from "./Api/api";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
@@ -6,13 +7,19 @@ import TrendingSection from "./TrendingSection";
 import FeedGrid from "./FeedGrid";
 
 export default function Dashboard() {
+  const location = useLocation();
+  const createdPin = location.state?.createdPin ?? null;
   const [message, setMessage] = useState("");
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await getDashboard();
         setMessage(res.data.message);
+        if (res.data.username) {
+          setUsername(res.data.username);
+        }
       } catch (err) {
         setMessage("You are not logged in ❌");
       }
@@ -24,11 +31,10 @@ export default function Dashboard() {
     <div className="h-screen flex flex-col">
       {/* Fixed Top Navbar */}
       <div className="fixed top-0 left-0 right-0 z-20 bg-white shadow">
-        <Navbar />
+        <Navbar username={username} />
       </div>
 
-      <div className="flex flex-1 pt-16"> 
-        {/* pt-16 pushes main content below navbar (assumes navbar height ~64px) */}
+      <div className="flex flex-1 pt-16">
 
         {/* Fixed Sidebar */}
         <div className="fixed top-16 left-0 bottom-0 w-64 z-10 bg-white shadow">
@@ -42,7 +48,7 @@ export default function Dashboard() {
           )}
 
           <TrendingSection />
-          <FeedGrid />
+          <FeedGrid createdPin={createdPin}/>
         </main>
       </div>
     </div>

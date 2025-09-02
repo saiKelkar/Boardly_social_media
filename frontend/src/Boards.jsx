@@ -4,17 +4,27 @@ import {
   getBoardByID, 
   createBoard, 
   updateBoard, 
-  deleteBoard 
+  deleteBoard,
+  getDashboard
 } from "./Api/api";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
 export default function Boards() {
+  const [username, setUsername] = useState("");
   const [boards, setBoards] = useState([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+      const fetchData = async () => {
+        const res = await getDashboard();
+        setUsername(res.data.username);
+      };
+      fetchData();
+    }, []);
 
   // Fetch boards on mount
   useEffect(() => {
@@ -62,13 +72,13 @@ export default function Boards() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar />
+    <div className="flex-1 flex flex-col">
+      {/* Navbar */}
+      <Navbar username={username} />
 
-      <div className="flex-1 flex flex-col">
-        {/* Navbar */}
-        <Navbar />
+      <div className="flex min-h-screen bg-gray-50">
+        {/* Sidebar */}
+        <Sidebar />
 
         {/* Page content */}
         <div className="p-6">

@@ -31,7 +31,6 @@ export default function TrendingSection() {
         item.id === id ? { ...item, shares: item.shares + 1 } : item
       )
     );
-    // Later: trigger a share modal or navigator.share()
   };
 
   return (
@@ -43,7 +42,6 @@ export default function TrendingSection() {
             key={item.id}
             className="min-w-[200px] rounded-lg shadow-md overflow-hidden bg-white"
           >
-            {/* When someone clicks the image, count it as a "view" */}
             <img
               src={item.img}
               alt="trending"

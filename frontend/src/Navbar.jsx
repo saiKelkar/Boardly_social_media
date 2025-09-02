@@ -8,8 +8,8 @@ export default function Navbar({ username }) {
       {/* Logo */}
       <div className="text-2xl font-bold text-red-500">Boardly</div>
 
-      {/* Search bar */}
-      <div className="flex-1 mx-6">
+      {/* Search + Username */}
+      <div className="flex-1 mx-6 flex items-center gap-4">
         <input
           type="text"
           placeholder="Search..."
@@ -17,10 +17,10 @@ export default function Navbar({ username }) {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-4 py-2 rounded-full border focus:outline-none focus:ring-2 focus:ring-red-400"
         />
+        <span className="font-semibold whitespace-nowrap">
+          Hello {username}
+        </span>
       </div>
-
-      {/* User name */}
-      <div className="font-semibold">{username}</div>
     </nav>
   );
 }

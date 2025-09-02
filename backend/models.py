@@ -44,9 +44,9 @@ class Posts(Base):
     # Relationship
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     user = relationship("Users", back_populates="posts")
-    boardposts = relationship("BoardPosts", back_populates="post")
     likes = relationship("Likes", back_populates="post")
     trending = relationship("Trending", back_populates="post")
+    boardposts = relationship("BoardPosts", back_populates="post") 
 
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)
