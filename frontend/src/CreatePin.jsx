@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPin, getDashboard } from "./Api/api";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
+import { usePins } from "./PinContext";
 
 const CreatePin = () => {
   const [username, setUsername] = useState("");
@@ -13,6 +14,7 @@ const CreatePin = () => {
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const navigate = useNavigate();
+  const { addPin } = usePins();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,10 +73,11 @@ const CreatePin = () => {
       // If backend returns the created pin, pass it to dashboard so FeedGrid can prepend it
       const createdPin = res?.data ?? null;
 
-      // navigate to the dashboard (not "/") — this was the issue
+      // navigate to the dashboard
+      addPin(createdPin);
       navigate("/dashboard", { state: { createdPin } });
 
-      // optionally clear local form state (not necessary if navigating away)
+      // optionally clear local form state
       setTitle("");
       setDescription("");
       setKeywords("");

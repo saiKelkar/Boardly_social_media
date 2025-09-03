@@ -9,9 +9,11 @@ from utils.Users_dependencies import get_current_user
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.get("/home")
-def get_dashboard(current_user: models.Users=Depends(get_current_user)):
-    return { "message": f"Welcome {current_user.first_name}",
-             "username": current_user.first_name }
+def get_dashboard(current_user: models.Users = Depends(get_current_user)):
+    return {
+        "message": f"Welcome {current_user.first_name}",
+        "username": current_user.first_name
+    }
 
 @router.post("/signup", response_model=schemas.UserResponse)
 def signup(user: schemas.UserCreate, db: Session=Depends(db.get_db)):

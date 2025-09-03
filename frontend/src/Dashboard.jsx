@@ -35,7 +35,6 @@ export default function Dashboard() {
       </div>
 
       <div className="flex flex-1 pt-16">
-
         {/* Fixed Sidebar */}
         <div className="fixed top-16 left-0 bottom-0 w-64 z-10 bg-white shadow">
           <Sidebar />

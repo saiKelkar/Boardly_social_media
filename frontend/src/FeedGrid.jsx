@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { getBoards, addPostToBoard, getPins } from "./Api/api";
 import Masonry from "react-masonry-css";
+import { usePins } from "./PinContext";
 
 const breakpointColumnsObj = {
   default: 4,
@@ -11,6 +12,7 @@ const breakpointColumnsObj = {
 };
 
 export default function FeedGrid({ createdPin }) {
+  const { pins: contextPins, addPin } = usePins();
   const [pins, setPins] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedPin, setSelectedPin] = useState(null);
@@ -19,16 +21,24 @@ export default function FeedGrid({ createdPin }) {
 
   // Fetch pins on mount
   useEffect(() => {
-    const fetchPins = async () => {
-      try {
-        const res = await getPins();
-        setPins(res.data); // backend returns real pins
+  const fetchPins = async () => {
+    try {
+      const res = await getPins();
+      if (Array.isArray(res.data)) {
+        res.data.forEach((p) => {
+          if (p && p.id && !contextPins.some(cp => cp.id === p.id)) {
+            addPin(p);
+          }
+        });
+      } else {
+        console.warn("Unexpected pins response:", res.data);
+        }
       } catch (err) {
         console.error("Error fetching pins:", err);
       }
     };
     fetchPins();
-  }, []);
+  }, [addPin, contextPins]);
 
   // Fetch boards on mount
   useEffect(() => {
@@ -47,16 +57,10 @@ export default function FeedGrid({ createdPin }) {
   }, []);
 
   useEffect(() => {
-    if (createdPin) {
-      setPins((prev) => {
-        if (prev.some(p => p.id === createdPin.id)) return prev;
-        return [createdPin, ...prev];
-      });
-    }
-  }, [createdPin]);
+    setPins(contextPins);
+  }, [contextPins]);
 
   const fetchMorePins = () => {
-    // Later, you can paginate with backend. For now, just return.
     console.log("Fetch more pins (pagination can be added)");
   };
 
