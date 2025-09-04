@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException, Request
 from sqlalchemy.orm import Session
 from pathlib import Path
 import shutil
@@ -25,6 +25,7 @@ def get_pin_by_id(id: int, db: Session=Depends(db.get_db)):
 
 @router.post("/", response_model=schemas.PostResponse)
 async def create_pin(
+    request: Request,
     title: str = Form(...),
     description: str = Form(...),
     keywords: str = Form(...),
@@ -38,7 +39,8 @@ async def create_pin(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        image_url = f"http://127.0.0.1:8000/uploads/{file.filename}"
+        base_url = str(request.base_url).rstrip("/")
+        image_url = f"{base_url}/uploads/{file.filename}"
         keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
 
         # create db object
