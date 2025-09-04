@@ -17,9 +17,8 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-redis_client = redis.Redis(
-    host="localhost",
-    port=6379,
+redis_client = redis.Redis.from_url(
+    "redis://default:CFTdP9VZdCERQmr7m6vOkbmUOU2P2XS7@redis-15940.c274.us-east-1-3.ec2.redns.redis-cloud.com:15940",
     decode_responses=True
 )
 
