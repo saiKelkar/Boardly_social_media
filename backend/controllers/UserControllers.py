@@ -46,7 +46,7 @@ def login(request: schemas.UserLogin, db: Session):
         key="session_id", 
         value=session_id, 
         httponly=True,
-        samesite="lax"
+        samesite="none"
     )
     return response
 
