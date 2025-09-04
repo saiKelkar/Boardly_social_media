@@ -51,6 +51,10 @@ pyrsistent==0.20.0
 pyasn1
 pyasn1-modules
 
+networkx
+sniffio
+python-multipart
+
 
 fsspec==2025.5.1
 greenlet==3.2.3
