@@ -48,6 +48,14 @@ class PostResponse(PostCreate):
     class Config:
         from_attributes=True
 
+class PostPreview(BaseModel):
+    id: int
+    title: str
+    image_url: Optional[str]
+
+    class Config:
+        from_attributes = True
+
 # Boards
 class BoardCreate(BaseModel):
     name: str
@@ -64,8 +72,38 @@ class BoardResponse(BoardCreate):
 
     class Config:
         from_attributes=True
+    
+class BoardWithPreviews(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    preview_posts: List[PostPreview] = []
+
+    class Config:
+        from_attributes = True
 
 # BoardPosts
+class BoardPostWithPost(BaseModel):
+    id: int
+    board_id: int
+    post_id: int
+    added_at: Optional[datetime] = None
+    post: PostResponse   # include the full post
+
+    class Config:
+        from_attributes = True
+
+class BoardWithPosts(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    user_id: int
+    created_at: Optional[datetime] = None
+    boardposts: List[BoardPostWithPost] = []
+
+    class Config:
+        from_attributes = True
+
 class BoardPostResponse(BaseModel):
     id: int
     board_id: int

@@ -1,12 +1,32 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from typing import List
 
 from controllers.websocket_manager import manager
-from models import Boards
+from models import Boards, Posts, BoardPosts
 import schemas
 
 def get_boards(db: Session, current_user):
-    return db.query(Boards).filter(Boards.user_id == current_user.id).all()
+    boards = db.query(Boards).filter(Boards.user_id == current_user.id).all()
+    result = []
+    for board in boards:
+        previews = (
+            db.query(Posts)
+            .join(BoardPosts, BoardPosts.post_id == Posts.id)
+            .filter(BoardPosts.board_id == board.id)
+            .limit(3)
+            .all()
+        )
+        preview_schemas: List[schemas.PostPreview] = [
+            schemas.PostPreview.model_validate(p, from_attributes=True) for p in previews
+        ]
+        result.append({
+            "id": board.id,
+            "name": board.name,
+            "description": board.description,
+            "preview_posts": preview_schemas
+        })
+    return result
 
 def get_board_by_id(id: int, db: Session):
     board = db.query(Boards).filter(Boards.id == id).first()
@@ -15,7 +35,22 @@ def get_board_by_id(id: int, db: Session):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Board with ID {id} not found"
         )
-    return board
+    boardposts = (
+        db.query(BoardPosts)
+        .filter(BoardPosts.board_id == id)
+        .all()
+    )
+    return schemas.BoardWithPosts(
+        id=board.id,
+        name=board.name,
+        description=board.description,
+        user_id=board.user_id,
+        created_at=board.created_at,
+        boardposts=[
+            schemas.BoardPostWithPost.model_validate(bp, from_attributes=True)
+            for bp in boardposts
+        ]
+    )
 
 async def create_board(board: schemas.BoardCreate, db: Session, current_user):
     new_board = Boards(
@@ -34,7 +69,12 @@ async def create_board(board: schemas.BoardCreate, db: Session, current_user):
             "description": new_board.description
         }
     })
-    return new_board
+    return {
+        "id": new_board.id,
+        "name": new_board.name,
+        "description": new_board.description,
+        "preview_posts": []
+    }
 
 async def update_board(id: int, board: schemas.BoardUpdate, db: Session):
     board_update = db.query(Boards).filter(Boards.id == id).first()
@@ -58,7 +98,22 @@ async def update_board(id: int, board: schemas.BoardUpdate, db: Session):
             "description": board_update.description
         }
     })
-    return board_update
+    previews = (
+        db.query(Posts)
+        .join(BoardPosts, BoardPosts.post_id == Posts.id)
+        .filter(BoardPosts.board_id == id)
+        .limit(3)
+        .all()
+    )
+    preview_schemas = [
+        schemas.PostPreview.model_validate(p, from_attributes=True) for p in previews
+    ]
+    return {
+        "id": board_update.id,
+        "name": board_update.name,
+        "description": board_update.description,
+        "preview_posts": preview_schemas
+    }
 
 def delete_board(id: int, db: Session):
     board = db.query(Boards).filter(Boards.id == id).first()

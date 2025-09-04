@@ -7,6 +7,7 @@ import {
   deleteBoard,
   getDashboard
 } from "./Api/api";
+import { Link } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
@@ -125,19 +126,42 @@ export default function Boards() {
           ) : boards.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {boards.map((board) => (
-                <div
-                    key={board.id}
+                <Link to={`/boards/${board.id}`} key={board.id}>
+                  <div
                     className="relative bg-white shadow rounded-lg p-4 hover:shadow-md transition"
-                    >
+                  >
+                    {/* Delete button */}
                     <button
-                        onClick={() => handleDelete(board.id)}
-                        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                      onClick={(e) => {
+                        e.preventDefault(); // prevent link navigation when deleting
+                        handleDelete(board.id);
+                      }}
+                      className="absolute top-2 right-2 text-red-500 hover:text-red-700"
                     >
-                        ✕
+                      ✕
                     </button>
+
+                    {/* Board info */}
                     <h2 className="font-semibold text-lg">{board.name}</h2>
-                    <p className="text-gray-600">{board.description}</p>
-                </div>
+                    <p className="text-gray-600 mb-3">{board.description}</p>
+
+                    {/* Board preview pins */}
+                    {board.preview_posts && board.preview_posts.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {board.preview_posts.map((pin) => (
+                          <img
+                            key={pin.id}
+                            src={pin.image_url}
+                            alt={pin.title}
+                            className="w-full h-20 object-cover rounded-md"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 mt-2">No pins yet</p>
+                    )}
+                  </div>
+                </Link>
               ))}
             </div>
           ) : (

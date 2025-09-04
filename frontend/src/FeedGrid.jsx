@@ -14,10 +14,12 @@ const breakpointColumnsObj = {
 export default function FeedGrid({ createdPin }) {
   const { pins: contextPins, addPin } = usePins();
   const [pins, setPins] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedPin, setSelectedPin] = useState(null);
   const [boards, setBoards] = useState([]);
   const [loadingBoards, setLoadingBoards] = useState(false);
+
+  const [saveModal, setSaveModal] = useState(false);
+  const [zoomModal, setZoomModal] = useState(false);
+  const [selectedPin, setSelectedPin] = useState(null);
 
   // Fetch pins on mount
   useEffect(() => {
@@ -66,7 +68,7 @@ export default function FeedGrid({ createdPin }) {
 
   const handleSaveClick = (pin) => {
     setSelectedPin(pin);
-    setShowModal(true);
+    setSaveModal(true);
   };
 
   const saveToBoard = async (boardId) => {
@@ -77,9 +79,13 @@ export default function FeedGrid({ createdPin }) {
     } catch (err) {
       console.error("Error saving pin to board:", err);
     } finally {
-      setShowModal(false);
+      setSaveModal(false);
       setSelectedPin(null);
     }
+  };
+
+  const handlePinClick = (pin) => {
+    setSelectedPin(pin);
   };
 
   return (
@@ -102,6 +108,10 @@ export default function FeedGrid({ createdPin }) {
             <div
               key={pin.id}
               className="relative rounded-lg overflow-hidden shadow-md bg-white group"
+              onClick={() => {
+                setSelectedPin(pin);
+                setZoomModal(true);
+              }}
             >
               <img
                 src={pin.image_url}
@@ -111,7 +121,11 @@ export default function FeedGrid({ createdPin }) {
               <p className="p-2 font-medium text-gray-800">{pin.title}</p>
 
               <button
-                onClick={() => handleSaveClick(pin)}
+                onClick={(e) => {
+                  e.stopPropagation(); // prevent triggering zoom
+                  setSelectedPin(pin);
+                  setSaveModal(true);
+                }}
                 className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition"
               >
                 Save
@@ -121,7 +135,7 @@ export default function FeedGrid({ createdPin }) {
         </Masonry>
       </InfiniteScroll>
 
-      {showModal && (
+      {saveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg w-80">
             <h2 className="text-lg font-semibold mb-4">Save to board</h2>
@@ -148,11 +162,31 @@ export default function FeedGrid({ createdPin }) {
             )}
 
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => setSaveModal(false)}
               className="mt-4 w-full bg-gray-200 py-2 rounded hover:bg-gray-300"
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {zoomModal && selectedPin && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-4 max-w-2xl w-full relative">
+            <button
+              onClick={() => setZoomModal(false)}
+              className="absolute top-2 right-2 text-gray-600 hover:text-black"
+            >
+              ✕
+            </button>
+            <img
+              src={selectedPin.image_url}
+              alt={selectedPin.title}
+              className="w-full h-auto rounded-lg"
+            />
+            <h2 className="text-xl font-bold mt-4">{selectedPin.title}</h2>
+            <p className="text-gray-600">{selectedPin.description}</p>
           </div>
         </div>
       )}

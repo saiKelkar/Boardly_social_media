@@ -2,7 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./LandingPage";
 import Dashboard from "./Dashboard";
 import CreatePin from "./CreatePin";  
-import Boards from "./Boards";        
+import Boards from "./Boards"; 
+import BoardDetail from "./BoardDetail";       
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
 
         {/* Boards */}
         <Route path="/boards" element={<Boards />} />
+        <Route path="/boards/:id" element={<BoardDetail />} />
       </Routes>
     </Router>
   );
