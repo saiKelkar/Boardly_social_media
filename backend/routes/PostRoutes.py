@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException, Request
 from sqlalchemy.orm import Session
 from pathlib import Path
-import shutil
-import httpx, os
+from openai import OpenAI
+import base64
 
 import db, schemas
 from models import Posts, Users
@@ -14,8 +14,7 @@ router = APIRouter(prefix="/pin", tags=["Pin"])
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-TAGPHOTO_API_KEY = "tk_live_QWQP7puxwnuulEKaGMFA2T3Wd6wnnWrc"
-TAGPHOTO_URL = "https://api.tagphoto.ai/api/v1/photo"
+client = OpenAI(api_key="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")
 
 @router.get("/", response_model=list[schemas.PostResponse])
 def get_pins(db: Session=Depends(db.get_db)):
@@ -25,44 +24,27 @@ def get_pins(db: Session=Depends(db.get_db)):
 async def suggest_keywords(file: UploadFile = File(...)):
     try:
         file_content = await file.read()
+        base64_image = base64.b64encode(file_content).decode("utf-8")
 
-        config_data = """{
-            "tagConfig": {
-                "allowOnlySingleWord": false,
-                "hasTagCountLimits": true,
-                "minTagCount": 1,
-                "maxTagCount": 10
-            },
-            "metadataConfig": {
-                "generateTitle": true,
-                "maxTitleWords": 10,
-                "generateColors": false,
-                "generateDescription": true,
-                "maxDescriptionWords": 10,
-                "minDescriptionWords": 1
-            }
-        }"""
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                TAGPHOTO_URL,
-                headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
-                files={
-                    "image": (file.filename, file_content, file.content_type),
-                    "config": (None, config_data, "application/json")
-                },
-            )
-            response.raise_for_status()
-            return response.json()
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"Keyword suggestion failed: {e.response.text}"
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # vision-enabled model
+            messages=[
+                {"role": "system", "content": "You are an assistant that generates SEO-friendly keywords/tags from images."},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "Generate 10 descriptive, human-friendly tags for this image. Output as a JSON list."},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                ]}
+            ],
+            max_tokens=200
         )
+
+        tags = response.choices[0].message.content
+
+        return {"tags": tags}
     except Exception as e:
         raise HTTPException(
-            status_code=500, 
-            detail=f"An unexpected error occurred: {str(e)}"
+            status_code=500,
+            detail=f"Keyword suggestion failed: {str(e)}"
         )
 
 @router.get("/{id}", response_model=schemas.PostResponse)
@@ -93,18 +75,23 @@ async def create_pin(
         if keywords:
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
         else:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    TAGPHOTO_URL,
-                    headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
-                    # Pass the file content directly
-                    files={"image": (file.filename, file_content, file.content_type)},
-                )
-                if response.status_code == 200:
-                    data = response.json()
-                    keyword_list = data.get("data", {}).get("tags", [])
-                else:
-                    keyword_list = []
+            base64_image = base64.b64encode(file_content).decode("utf-8")
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",  # vision model
+                messages=[
+                    {"role": "system", "content": "You are an assistant that generates SEO-friendly keywords/tags from images."},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": "Generate 10 descriptive, human-friendly tags for this image. Output as a JSON list of strings."},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                    ]}
+                ],
+                max_tokens=200
+            )
+            try:
+                keyword_list = eval(response.choices[0].message.content)
+            except Exception:
+                keyword_list = [response.choices[0].message.content]
 
         # create db object
         pin = Posts(
