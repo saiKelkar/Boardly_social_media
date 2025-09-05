@@ -35,10 +35,9 @@ async def suggest_keywords(file: UploadFile = File(...)):
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                 ]}
             ],
-            max_tokens=200
         )
 
-        tags = response.choices[0].message.content
+        tags = response.choices[0].message["content"]
 
         return {"tags": tags}
     except Exception as e:
@@ -68,8 +67,8 @@ async def create_pin(
         with open(file_path, "wb") as buffer:
             buffer.write(file_content)
 
-        base_url = str(request.base_url).rstrip("/")
-        image_url = f"{base_url}/uploads/{file.filename}"
+        BACKEND_URL = "https://boardly-social-media.onrender.com"
+        image_url = f"{BACKEND_URL}/uploads/{file.filename}"
 
         keyword_list = []
         if keywords:
