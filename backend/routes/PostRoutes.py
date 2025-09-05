@@ -90,38 +90,43 @@ def delete_pin(id: int, db: Session=Depends(db.get_db)):
 @router.post("/suggest_keywords")
 async def suggest_keywords(file: UploadFile = File(...)):
     try:
-        file_path = UPLOAD_DIR / file.filename
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        file_content = await file.read()
+
+        config_data = """{
+            "tagConfig": {
+                "allowOnlySingleWord": false,
+                "hasTagCountLimits": true,
+                "minTagCount": 1,
+                "maxTagCount": 10
+            },
+            "metadataConfig": {
+                "generateTitle": true,
+                "maxTitleWords": 10,
+                "generateColors": false,
+                "generateDescription": true,
+                "maxDescriptionWords": 10,
+                "minDescriptionWords": 1
+            }
+        }"""
 
         async with httpx.AsyncClient() as client:
-            with open(file_path, "rb") as img:
-                response = await client.post(
-                    TAGPHOTO_URL,
-                    headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
-                    files={"image": (file.filename, img, file.content_type)},
-                    data={
-                        "config": """{
-                            "tagConfig": {
-                                "allowOnlySingleWord": false,
-                                "hasTagCountLimits": true,
-                                "minTagCount": 1,
-                                "maxTagCount": 10
-                            },
-                            "metadataConfig": {
-                                "generateTitle": true,
-                                "maxTitleWords": 10,
-                                "generateColors": false,
-                                "generateDescription": true,
-                                "maxDescriptionWords": 10,
-                                "minDescriptionWords": 1
-                            }
-                        }"""
-                    }
-                )
-        if response.status_code == 200:
+            response = await client.post(
+                TAGPHOTO_URL,
+                headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
+                files={
+                    "image": (file.filename, file_content, file.content_type),
+                    "config": (None, config_data, "application/json")
+                },
+            )
+            response.raise_for_status()
             return response.json()
-        else:
-            raise HTTPException(status_code=response.status_code, detail="Keyword suggestion failed")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Keyword suggestion failed: {e.response.text}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
