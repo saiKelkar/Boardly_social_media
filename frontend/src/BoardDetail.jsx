@@ -6,7 +6,7 @@ import Sidebar from "./Sidebar";
 
 export default function BoardDetail() {
   const [username, setUsername] = useState("");
-  const { id } = useParams(); // board ID from URL
+  const { id } = useParams();
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
