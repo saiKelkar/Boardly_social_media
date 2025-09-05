@@ -21,7 +21,6 @@ export default function FeedGrid({ createdPin }) {
   const [zoomModal, setZoomModal] = useState(false);
   const [selectedPin, setSelectedPin] = useState(null);
 
-  // Fetch pins on mount
   useEffect(() => {
   const fetchPins = async () => {
     try {
@@ -42,7 +41,7 @@ export default function FeedGrid({ createdPin }) {
     fetchPins();
   }, [addPin, contextPins]);
 
-  // Fetch boards on mount
+
   useEffect(() => {
     const fetchBoards = async () => {
       try {
@@ -93,7 +92,7 @@ export default function FeedGrid({ createdPin }) {
       <InfiniteScroll
         dataLength={pins.length}
         next={fetchMorePins}
-        hasMore={false} // disable infinite scroll for now
+        hasMore={false}
         loader={<h4 className="text-center py-4">Loading...</h4>}
         endMessage={
           <p className="text-center py-4 font-semibold">You’ve seen it all.</p>
@@ -122,7 +121,7 @@ export default function FeedGrid({ createdPin }) {
 
               <button
                 onClick={(e) => {
-                  e.stopPropagation(); // prevent triggering zoom
+                  e.stopPropagation();
                   setSelectedPin(pin);
                   setSaveModal(true);
                 }}
