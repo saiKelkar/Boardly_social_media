@@ -27,7 +27,7 @@ export default function Boards() {
       fetchData();
     }, []);
 
-  // Fetch boards on mount
+  // Fetch boards
   useEffect(() => {
     fetchBoards();
   }, []);
@@ -85,7 +85,7 @@ export default function Boards() {
         <div className="p-6">
           <h1 className="text-2xl font-bold mb-4">My Boards</h1>
 
-          {/* Create Board Form */}
+          {/* Board Form */}
           <form
             onSubmit={handleCreate}
             className="bg-white shadow-md rounded-lg p-4 mb-6 flex flex-col gap-3 max-w-md"
@@ -113,7 +113,6 @@ export default function Boards() {
             </button>
           </form>
 
-          {/* Error Message */}
           {error && (
             <p className="text-red-600 mb-4">
               {error}
