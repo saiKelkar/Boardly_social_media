@@ -23,7 +23,7 @@ async def suggest_keywords(file: UploadFile = File(...)):
         base64_image = base64.b64encode(file_content).decode("utf-8")
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # vision-enabled model
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are an assistant that generates SEO-friendly keywords/tags from images."},
                 {"role": "user", "content": [
@@ -56,7 +56,6 @@ async def create_pin(
     current_user: Users=Depends(get_current_user)
 ):
     try:
-        # save file
         file_path = UPLOAD_DIR / file.filename
         file_content = await file.read()
         with open(file_path, "wb") as buffer:
@@ -72,7 +71,7 @@ async def create_pin(
             base64_image = base64.b64encode(file_content).decode("utf-8")
 
             response = client.chat.completions.create(
-                model="gpt-4o-mini",  # vision model
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are an assistant that generates SEO-friendly keywords/tags from images."},
                     {"role": "user", "content": [
@@ -92,7 +91,6 @@ async def create_pin(
                     detail=f"Keyword suggestion failed: {str(e)}"
                 )
 
-        # create db object
         pin = Posts(
             title=title,
             description=description,
