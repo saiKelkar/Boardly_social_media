@@ -23,7 +23,6 @@ const CreatePin = () => {
         const res = await getDashboard();
         if (res?.data?.username) setUsername(res.data.username);
       } catch (err) {
-        // not fatal — user might not be logged in
         console.warn("Could not fetch dashboard user:", err);
       }
     };
@@ -77,19 +76,14 @@ const CreatePin = () => {
         .filter((kw) => kw.length > 0);
       formData.append("keywords", keywordArray.join(","));
 
-      // NOTE: backend expects 'file'
       formData.append("file", image);
 
       const res = await createPin(formData);
 
-      // If backend returns the created pin, pass it to dashboard so FeedGrid can prepend it
       const createdPin = res?.data ?? null;
-
-      // navigate to the dashboard
       addPin(createdPin);
       navigate("/dashboard", { state: { createdPin } });
 
-      // optionally clear local form state
       setTitle("");
       setDescription("");
       setKeywords("");
