@@ -13,8 +13,6 @@ export default function Login({ switchToSignup }) {
     try {
       const res = await logIn({ email, password });
       console.log("Login successful:", res.data);
-
-      // Navigate only if backend confirms success
       navigate("/dashboard");
       
       // reset form
