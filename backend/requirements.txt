@@ -54,6 +54,7 @@ pyasn1-modules
 networkx
 sniffio
 python-multipart
+httpx
 
 
 fsspec==2025.5.1
