@@ -15,7 +15,7 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 TAGPHOTO_API_KEY = "tk_live_QWQP7puxwnuulEKaGMFA2T3Wd6wnnWrc"
-TAGPHOTO_URL = "https://api.tagphoto.ai/v1/generate-tags"
+TAGPHOTO_URL = "https://api.tagphoto.ai/api/v1/photo"
 
 @router.get("/", response_model=list[schemas.PostResponse])
 def get_pins(db: Session=Depends(db.get_db)):
@@ -53,11 +53,11 @@ async def create_pin(
                     response = await client.post(
                         TAGPHOTO_URL,
                         headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
-                        files={"file": (file.filename, img, file.content_type)},
+                        files={"image": (file.filename, img, file.content_type)},
                     )
                 if response.status_code == 200:
                     data = response.json()
-                    keyword_list = data.get("tags", [])
+                    keyword_list = data.get("data", {}).get("tags", [])
                 else:
                     keyword_list = []
 
@@ -89,12 +89,35 @@ def delete_pin(id: int, db: Session=Depends(db.get_db)):
 @router.post("/suggest_keywords")
 async def suggest_keywords(file: UploadFile = File(...)):
     try:
+        file_path = UPLOAD_DIR / file.filename
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                TAGPHOTO_URL,
-                headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
-                files={"file": (file.filename, file.file, file.content_type)},
-            )
+            with open(file_path, "rb") as img:
+                response = await client.post(
+                    TAGPHOTO_URL,
+                    headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
+                    files={"image": (file.filename, img, file.content_type)},
+                    data={
+                        "config": """{
+                            "tagConfig": {
+                                "allowOnlySingleWord": false,
+                                "hasTagCountLimits": true,
+                                "minTagCount": 1,
+                                "maxTagCount": 10
+                            },
+                            "metadataConfig": {
+                                "generateTitle": true,
+                                "maxTitleWords": 10,
+                                "generateColors": false,
+                                "generateDescription": true,
+                                "maxDescriptionWords": 10,
+                                "minDescriptionWords": 1
+                            }
+                        }"""
+                    }
+                )
         if response.status_code == 200:
             return response.json()
         else:
