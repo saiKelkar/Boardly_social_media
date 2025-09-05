@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-    baseURL: "https://boardly-social-media.onrender.com/",
+    baseURL: "https://boardly-social-media.onrender.com",
     withCredentials: true,
 });
 
