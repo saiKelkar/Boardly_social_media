@@ -40,6 +40,14 @@ export const logOut = () => {
 };
 
 // Posts
+export const suggestKeywords = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return await API.post("/pin/suggest_keywords", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};
+
 export const getPins = () => 
     API.get("/pin/");
 
@@ -51,14 +59,6 @@ export const createPin = async(formData) => {
     headers: {
       "Content-Type": "multipart/form-data",
     },
-  });
-};
-
-export const suggestKeywords = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  return await API.post("/pin/suggest_keywords", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
   });
 };
 
@@ -119,3 +119,5 @@ export const unfollowUser = (following_id, follower_id) =>
 // Trending
 export const getTrending = (limit) =>
     API.get("/trending/", { params: { limit } });
+
+export default API;

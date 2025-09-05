@@ -21,6 +21,50 @@ TAGPHOTO_URL = "https://api.tagphoto.ai/api/v1/photo"
 def get_pins(db: Session=Depends(db.get_db)):
     return PostControllers.get_pins(db)
 
+@router.post("/suggest_keywords")
+async def suggest_keywords(file: UploadFile = File(...)):
+    try:
+        file_content = await file.read()
+
+        config_data = """{
+            "tagConfig": {
+                "allowOnlySingleWord": false,
+                "hasTagCountLimits": true,
+                "minTagCount": 1,
+                "maxTagCount": 10
+            },
+            "metadataConfig": {
+                "generateTitle": true,
+                "maxTitleWords": 10,
+                "generateColors": false,
+                "generateDescription": true,
+                "maxDescriptionWords": 10,
+                "minDescriptionWords": 1
+            }
+        }"""
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                TAGPHOTO_URL,
+                headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
+                files={
+                    "image": (file.filename, file_content, file.content_type),
+                    "config": (None, config_data, "application/json")
+                },
+            )
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Keyword suggestion failed: {e.response.text}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An unexpected error occurred: {str(e)}"
+        )
+
 @router.get("/{id}", response_model=schemas.PostResponse)
 def get_pin_by_id(id: int, db: Session=Depends(db.get_db)):
     return PostControllers.get_pin_by_id(id, db)
@@ -86,47 +130,3 @@ async def update_pin(id: int, pin: schemas.PostUpdate, db: Session=Depends(db.ge
 @router.delete("/{id}")
 def delete_pin(id: int, db: Session=Depends(db.get_db)):
     return PostControllers.delete_pin(id, db)
-
-@router.post("/suggest_keywords")
-async def suggest_keywords(file: UploadFile = File(...)):
-    try:
-        file_content = await file.read()
-
-        config_data = """{
-            "tagConfig": {
-                "allowOnlySingleWord": false,
-                "hasTagCountLimits": true,
-                "minTagCount": 1,
-                "maxTagCount": 10
-            },
-            "metadataConfig": {
-                "generateTitle": true,
-                "maxTitleWords": 10,
-                "generateColors": false,
-                "generateDescription": true,
-                "maxDescriptionWords": 10,
-                "minDescriptionWords": 1
-            }
-        }"""
-
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                TAGPHOTO_URL,
-                headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
-                files={
-                    "image": (file.filename, file_content, file.content_type),
-                    "config": (None, config_data, "application/json")
-                },
-            )
-            response.raise_for_status()
-            return response.json()
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"Keyword suggestion failed: {e.response.text}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, 
-            detail=f"An unexpected error occurred: {str(e)}"
-        )
