@@ -38,8 +38,9 @@ async def create_pin(
     try:
         # save file
         file_path = UPLOAD_DIR / file.filename
+        file_content = await file.read()
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(file_content)
 
         base_url = str(request.base_url).rstrip("/")
         image_url = f"{base_url}/uploads/{file.filename}"
@@ -49,12 +50,12 @@ async def create_pin(
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
         else:
             async with httpx.AsyncClient() as client:
-                with open(file_path, "rb") as img:
-                    response = await client.post(
-                        TAGPHOTO_URL,
-                        headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
-                        files={"image": (file.filename, img, file.content_type)},
-                    )
+                response = await client.post(
+                    TAGPHOTO_URL,
+                    headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
+                    # Pass the file content directly
+                    files={"image": (file.filename, file_content, file.content_type)},
+                )
                 if response.status_code == 200:
                     data = response.json()
                     keyword_list = data.get("data", {}).get("tags", [])
