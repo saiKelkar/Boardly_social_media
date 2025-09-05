@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException, R
 from sqlalchemy.orm import Session
 from pathlib import Path
 import shutil
+import httpx, os
 
 import db, schemas
 from models import Posts, Users
@@ -13,7 +14,8 @@ router = APIRouter(prefix="/pin", tags=["Pin"])
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-
+TAGPHOTO_API_KEY = "tk_live_QWQP7puxwnuulEKaGMFA2T3Wd6wnnWrc"
+TAGPHOTO_URL = "https://api.tagphoto.ai/v1/generate-tags"
 
 @router.get("/", response_model=list[schemas.PostResponse])
 def get_pins(db: Session=Depends(db.get_db)):
@@ -28,7 +30,7 @@ async def create_pin(
     request: Request,
     title: str = Form(...),
     description: str = Form(...),
-    keywords: str = Form(...),
+    keywords: str = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(db.get_db),
     current_user: Users=Depends(get_current_user)
@@ -41,7 +43,23 @@ async def create_pin(
 
         base_url = str(request.base_url).rstrip("/")
         image_url = f"{base_url}/uploads/{file.filename}"
-        keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+
+        keyword_list = []
+        if keywords:
+            keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
+        else:
+            async with httpx.AsyncClient() as client:
+                with open(file_path, "rb") as img:
+                    response = await client.post(
+                        TAGPHOTO_URL,
+                        headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
+                        files={"file": (file.filename, img, file.content_type)},
+                    )
+                if response.status_code == 200:
+                    data = response.json()
+                    keyword_list = data.get("tags", [])
+                else:
+                    keyword_list = []
 
         # create db object
         pin = Posts(
@@ -67,3 +85,19 @@ async def update_pin(id: int, pin: schemas.PostUpdate, db: Session=Depends(db.ge
 @router.delete("/{id}")
 def delete_pin(id: int, db: Session=Depends(db.get_db)):
     return PostControllers.delete_pin(id, db)
+
+@router.post("/suggest_keywords")
+async def suggest_keywords(file: UploadFile = File(...)):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                TAGPHOTO_URL,
+                headers={"Authorization": f"Bearer {TAGPHOTO_API_KEY}"},
+                files={"file": (file.filename, file.file, file.content_type)},
+            )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise HTTPException(status_code=response.status_code, detail="Keyword suggestion failed")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createPin, getDashboard } from "./Api/api";
+import { createPin, getDashboard, suggestKeywords } from "./Api/api";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import { usePins } from "./PinContext";
@@ -13,6 +13,7 @@ const CreatePin = () => {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [suggestedKeywords, setSuggestedKeywords] = useState([]);
   const navigate = useNavigate();
   const { addPin } = usePins();
 
@@ -46,6 +47,17 @@ const CreatePin = () => {
     setDragActive(false);
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
       setImage(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleSuggestKeywords = async () => {
+    if (!image) return alert("Upload an image first");
+    try {
+      const res = await suggestKeywords(image);
+      setSuggestedKeywords(res.data.tags || []);
+    } catch (err) {
+      console.error("Error suggesting keywords:", err);
+      alert("Failed to fetch AI keywords");
     }
   };
 
@@ -129,6 +141,33 @@ const CreatePin = () => {
                 onChange={(e) => setKeywords(e.target.value)}
                 className="w-full border p-2 rounded"
               />
+
+              {suggestedKeywords.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {suggestedKeywords.map((tag, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() =>
+                        setKeywords((prev) =>
+                          prev ? `${prev}, ${tag}` : tag
+                        )
+                      }
+                      className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSuggestKeywords}
+                className="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 mt-2"
+              >
+                Suggest Keywords
+              </button>
 
               <div
                 className={`w-full p-6 border-2 border-dashed rounded-lg text-center cursor-pointer transition ${
