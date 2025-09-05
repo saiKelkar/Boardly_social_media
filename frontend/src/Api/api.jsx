@@ -57,7 +57,7 @@ export const createPin = async(formData) => {
 export const suggestKeywords = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
-  return axios.post(`${API_BASE}/pin/suggest_keywords`, formData, {
+  return axios.post("/pin/suggest_keywords", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 };
