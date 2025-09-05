@@ -55,6 +55,7 @@ networkx
 sniffio
 python-multipart
 httpx
+openai
 
 
 fsspec==2025.5.1
