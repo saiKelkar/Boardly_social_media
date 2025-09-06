@@ -2,6 +2,8 @@
 
 **Boardly** is a social media platform inspired by Pinterest, allowing users to create, share, and organize pins and boards. It features AI-powered keyword suggestions for images, trending feeds, and a smooth user experience.  
 
+Watch the full demo here: [https://youtu.be/uXOOn0DeI6U](https://youtu.be/uXOOn0DeI6U)
+
 The site is hosted live at: [https://boardly-social-media.vercel.app/](https://boardly-social-media.vercel.app/)
 
 ---
