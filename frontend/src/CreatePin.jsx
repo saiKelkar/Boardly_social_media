@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import imageCompression from "browser-image-compression";
 import { createPin, getDashboard, suggestKeywords } from "./Api/api";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
@@ -16,6 +17,7 @@ const CreatePin = () => {
   const [suggestedKeywords, setSuggestedKeywords] = useState([]);
   const navigate = useNavigate();
   const { addPin } = usePins();
+  const [suggestLoading, setSuggestLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,16 +25,22 @@ const CreatePin = () => {
         const res = await getDashboard();
         if (res?.data?.username) setUsername(res.data.username);
       } catch (err) {
-        // not fatal — user might not be logged in
         console.warn("Could not fetch dashboard user:", err);
       }
     };
     fetchData();
   }, []);
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) setImage(e.target.files[0]);
-  };
+  const handleFileChange = async (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const compressed = await imageCompression(file, {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1024,
+    });
+    setImage(compressed);
+  }
+};
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -51,15 +59,28 @@ const CreatePin = () => {
   };
 
   const handleSuggestKeywords = async () => {
+    if (suggestLoading) return;
     if (!image) return alert("Upload an image first");
+    setSuggestLoading(true);
     try {
-      const res = await suggestKeywords(image);
-      setSuggestedKeywords(res.data.tags || []);
-    } catch (err) {
-      console.error("Error suggesting keywords:", err);
-      alert("Failed to fetch AI keywords");
-    }
-  };
+        const res = await suggestKeywords(image);
+        console.log("API Response:", res.data);
+
+        let tags = [];
+
+        if (Array.isArray(res.data.tags)) {
+          tags = res.data.tags.map(t => (typeof t === "string" ? t : t.tag));
+        } else if (typeof res.data.tags === "string") {
+          tags = res.data.tags.split(",").map(t => t.trim()).filter(Boolean);
+        }
+
+        setSuggestedKeywords(tags);
+      } catch (err) {
+        console.error("Error suggesting keywords:", err);
+      } finally {
+        setSuggestLoading(false);
+      }
+    };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,19 +98,16 @@ const CreatePin = () => {
         .filter((kw) => kw.length > 0);
       formData.append("keywords", keywordArray.join(","));
 
-      // NOTE: backend expects 'file'
       formData.append("file", image);
 
       const res = await createPin(formData);
+      console.log("Created Pin Response:", res.data);
 
-      // If backend returns the created pin, pass it to dashboard so FeedGrid can prepend it
       const createdPin = res?.data ?? null;
 
-      // navigate to the dashboard
       addPin(createdPin);
       navigate("/dashboard", { state: { createdPin } });
 
-      // optionally clear local form state
       setTitle("");
       setDescription("");
       setKeywords("");

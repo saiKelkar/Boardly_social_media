@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
+import requests
 from sqlalchemy.orm import Session
 from pathlib import Path
-from openai import OpenAI
-import base64, traceback
+import traceback, os, shutil, uuid
+from dotenv import load_dotenv
+load_dotenv()
 
 import db, schemas
 from models import Posts, Users
@@ -13,41 +15,44 @@ router = APIRouter(prefix="/pin", tags=["Pin"])
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-client = OpenAI(api_key="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")
+IMAGGA_API_KEY = os.getenv("IMAGGA_API_KEY")
+IMAGGA_API_SECRET = os.getenv("IMAGGA_API_SECRET")
 
 @router.post("/suggest_keywords")
 async def suggest_keywords(file: UploadFile = File(...)):
     try:
-        file_content = await file.read()
-        base64_image = base64.b64encode(file_content).decode("utf-8")
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # vision-enabled model
-            messages=[
-                {"role": "system", "content": "You are an assistant that generates SEO-friendly keywords/tags from images."},
-                {"role": "user", "content": [
-                    {"type": "text", "text": "Generate 10 descriptive, human-friendly tags for this image. Output as a JSON list."},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                ]}
-            ],
+        upload_response = requests.post(
+            "https://api.imagga.com/v2/uploads",
+            auth=(IMAGGA_API_KEY, IMAGGA_API_SECRET),
+            files={"image": (file.filename, file.file, file.content_type)},
         )
 
-        tags = response.choices[0].message["content"]
+        if upload_response.status_code != 200:
+            raise HTTPException(status_code=500, detail=f"Upload error: {upload_response.text}")
+
+        upload_id = upload_response.json()["result"]["upload_id"]
+
+        tags_response = requests.get(
+            f"https://api.imagga.com/v2/tags?image_upload_id={upload_id}",
+            auth=(IMAGGA_API_KEY, IMAGGA_API_SECRET),
+        )
+
+        if tags_response.status_code != 200:
+            raise HTTPException(status_code=500, detail=f"Tagging error: {tags_response.text}")
+
+        tags_result = tags_response.json()
+        tags = [
+            {"tag": t["tag"]["en"], "confidence": t["confidence"]}
+            for t in tags_result["result"]["tags"][:10]
+        ]
 
         return {"tags": tags}
     except Exception as e:
-        print("=== ERROR in /pin/suggest_keywords ===")
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Keyword suggestion failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Keyword suggestion failed: {str(e)}")
 
 
 @router.post("/", response_model=schemas.PostResponse)
 async def create_pin(
-    request: Request,
     title: str = Form(...),
     description: str = Form(...),
     keywords: str = Form(None),
@@ -57,40 +62,18 @@ async def create_pin(
 ):
     try:
         # save file
-        file_path = UPLOAD_DIR / file.filename
-        file_content = await file.read()
+        ext = os.path.splitext(file.filename)[1]
+        safe_filename = f"{uuid.uuid4().hex}{ext}"
+        file_path = UPLOAD_DIR / safe_filename
         with open(file_path, "wb") as buffer:
-            buffer.write(file_content)
+            shutil.copyfileobj(file.file, buffer)
 
-        BACKEND_URL = "https://boardly-social-media.onrender.com"
-        image_url = f"{BACKEND_URL}/uploads/{file.filename}"
+        BACKEND_URL = "http://127.0.0.1:8000"
+        image_url = f"{BACKEND_URL}/uploads/{safe_filename}"
 
         keyword_list = []
         if keywords:
             keyword_list = [kw.strip() for kw in keywords.split(",") if kw.strip()]
-        else:
-            base64_image = base64.b64encode(file_content).decode("utf-8")
-
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",  # vision model
-                messages=[
-                    {"role": "system", "content": "You are an assistant that generates SEO-friendly keywords/tags from images."},
-                    {"role": "user", "content": [
-                        {"type": "text", "text": "Generate 10 descriptive, human-friendly tags for this image. Output as a JSON list of strings."},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                    ]}
-                ],
-                max_tokens=200
-            )
-            try:
-                keyword_list = eval(response.choices[0].message.content)
-            except Exception as e:
-                print("=== ERROR in /pin/suggest_keywords ===")
-                traceback.print_exc()
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Keyword suggestion failed: {str(e)}"
-                )
 
         # create db object
         pin = Posts(
